@@ -7,6 +7,10 @@ import os
 import openrouteservice
 from geopy.distance import geodesic
 import requests
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta"
@@ -23,7 +27,7 @@ bcrypt = Bcrypt(app)
 
 ORS_API_KEY = "5b3ce3597851110001cf6248fc9aa4bd9bd44ccba9c53c10de543c34"  # Reemplaza con tu clave de OpenRouteService
 client = openrouteservice.Client(key=ORS_API_KEY)
-OWM_API_KEY = "681efc86e121a7942fab473c36c0c325"  # Reemplaza con tu clave de OpenWeatherMap
+OWM_API_KEY = os.getenv("OWM_API_KEY")  # Asegúrate de definir esta variable en tu archivo .env
 
 # Inicializar Flask-Migrate
 migrate = Migrate(app, db)
@@ -287,25 +291,37 @@ def calcular_ruta():
             start = coordinates[i]
             end = coordinates[i + 1]
             tramo_km = geodesic((start[1], start[0]), (end[1], end[0])).kilometers
-            acumulado_km += tramo_km
 
-            if acumulado_km >= intervalo_km or i == len(coordinates) - 2:
-                tiempo_estimado = acumulado_km / velocidad_promedio  # Tiempo estimado en horas
+            if acumulado_km + tramo_km >= intervalo_km:
+                # Calcular el punto exacto donde se cumple el intervalo
+                exceso_km = (acumulado_km + tramo_km) - intervalo_km
+                factor = (tramo_km - exceso_km) / tramo_km
+                punto_intermedio = [
+                    start[0] + factor * (end[0] - start[0]),
+                    start[1] + factor * (end[1] - start[1])
+                ]
+
+                tiempo_estimado = intervalo_km / velocidad_promedio  # Tiempo estimado en horas
                 checkpoint = Checkpoint(
                     route_id=new_route.id,
-                    lat=end[1],
-                    lon=end[0],
-                    kilometro=round(acumulado_km, 1),
+                    lat=punto_intermedio[1],
+                    lon=punto_intermedio[0],
+                    kilometro=round(intervalo_km, 1),
                     tiempo_estimado=round(tiempo_estimado, 2)
                 )
                 db.session.add(checkpoint)
                 route_points.append({
-                    "lat": end[1],
-                    "lon": end[0],
-                    "kilometro": round(acumulado_km, 1),
+                    "lat": punto_intermedio[1],
+                    "lon": punto_intermedio[0],
+                    "kilometro": round(intervalo_km, 1),
                     "tiempo_estimado": round(tiempo_estimado, 2)
                 })
-                acumulado_km = 0
+
+                # Reiniciar el acumulado y continuar desde el punto intermedio
+                acumulado_km = exceso_km
+                coordinates.insert(i + 1, punto_intermedio)
+            else:
+                acumulado_km += tramo_km
 
         db.session.commit()
 
