@@ -1,3 +1,7 @@
 Flask
 openrouteservice
 geopy
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Bcrypt
+Flask-Login
