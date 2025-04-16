@@ -25,9 +25,10 @@ login_manager.login_view = "login"
 
 bcrypt = Bcrypt(app)
 
-ORS_API_KEY = "5b3ce3597851110001cf6248fc9aa4bd9bd44ccba9c53c10de543c34"  # Reemplaza con tu clave de OpenRouteService
-client = openrouteservice.Client(key=ORS_API_KEY)
+# Reemplazar las claves de OpenWeatherMap y OpenRouteService con variables de entorno
+ORS_API_KEY = os.getenv("ORS_API_KEY")  # Asegúrate de definir esta variable en tu archivo .env
 OWM_API_KEY = os.getenv("OWM_API_KEY")  # Asegúrate de definir esta variable en tu archivo .env
+client = openrouteservice.Client(key=ORS_API_KEY)
 
 # Inicializar Flask-Migrate
 migrate = Migrate(app, db)
@@ -248,11 +249,14 @@ def toggle_user(user_id):
     flash(f"El estado de la cuenta de {user.username} ha sido cambiado.")
     return redirect(url_for("admin_users"))
 
-@app.route("/calcular_ruta", methods=["POST"])
+@app.route("/calcular_ruta", methods=["GET", "POST"])
 @login_required
 def calcular_ruta():
-    """Calcula la ruta entre dos puntos, genera checkpoints y guarda en la base de datos."""
-    data = request.json
+    if request.method == "GET":
+        return render_template("calcular_ruta.html")
+
+    # Procesar la solicitud POST
+    data = request.form
     origen = data.get("origen")
     destino = data.get("destino")
     intervalo_km = float(data.get("intervalo_km", 10))  # Distancia entre checkpoints (por defecto: 10 km)
@@ -284,9 +288,10 @@ def calcular_ruta():
         db.session.add(new_route)
         db.session.commit()
 
-        # Generar checkpoints y guardarlos en la base de datos
+        # Generar checkpoints y calcular ETA
         route_points = []
         acumulado_km = 0
+        tiempo_acumulado = 0  # Tiempo acumulado en horas
         for i in range(len(coordinates) - 1):
             start = coordinates[i]
             end = coordinates[i + 1]
@@ -301,20 +306,20 @@ def calcular_ruta():
                     start[1] + factor * (end[1] - start[1])
                 ]
 
-                tiempo_estimado = intervalo_km / velocidad_promedio  # Tiempo estimado en horas
+                tiempo_acumulado += intervalo_km / velocidad_promedio  # Tiempo estimado en horas
                 checkpoint = Checkpoint(
                     route_id=new_route.id,
                     lat=punto_intermedio[1],
                     lon=punto_intermedio[0],
-                    kilometro=round(intervalo_km, 1),
-                    tiempo_estimado=round(tiempo_estimado, 2)
+                    kilometro=round(acumulado_km + tramo_km, 1),
+                    tiempo_estimado=round(tiempo_acumulado, 2)
                 )
                 db.session.add(checkpoint)
                 route_points.append({
                     "lat": punto_intermedio[1],
                     "lon": punto_intermedio[0],
-                    "kilometro": round(intervalo_km, 1),
-                    "tiempo_estimado": round(tiempo_estimado, 2)
+                    "kilometro": round(acumulado_km + tramo_km, 1),
+                    "tiempo_estimado": round(tiempo_acumulado, 2)
                 })
 
                 # Reiniciar el acumulado y continuar desde el punto intermedio
@@ -325,9 +330,11 @@ def calcular_ruta():
 
         db.session.commit()
 
-        return jsonify({"route_points": route_points, "coordinates": coordinates})
+        # Renderizar la plantilla con el mapa y los puntos calculados
+        return render_template("ver_ruta.html", route=new_route, coordinates=coordinates, route_points=route_points)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        flash(f"Error al calcular la ruta: {str(e)}")
+        return redirect(url_for("calcular_ruta"))
 
 @app.route("/mis_rutas")
 @login_required
@@ -394,21 +401,29 @@ def ver_ruta(route_id):
     # Obtener POIs agrupados por categorías solo para el destino
     pois_destino = obtener_pois_por_categorias(coordinates[-1][1], coordinates[-1][0], categorias) if coordinates else {}
 
-    # Validar que los datos sean serializables
+    # Validar que los datos sean serializables y asignar valores predeterminados
     clima_destino = clima_destino if isinstance(clima_destino, dict) else {}
     pois_destino = pois_destino if isinstance(pois_destino, dict) else {}
+    coordinates = coordinates if isinstance(coordinates, list) else []
 
-    # Depuración: Imprimir los valores antes de enviarlos al frontend
-    print("Coordenadas:", coordinates)
-    print("Clima en el destino:", clima_destino)
-    print("POIs en el destino:", pois_destino)
+    # Generar puntos de la ruta para el mapa
+    route_points = [
+        {
+            "lat": checkpoint.lat,
+            "lon": checkpoint.lon,
+            "kilometro": checkpoint.kilometro,
+            "tiempo_estimado": checkpoint.tiempo_estimado
+        }
+        for checkpoint in checkpoints
+    ]
 
     return render_template(
         "ver_ruta.html",
         route=route,
         coordinates=coordinates,
         clima_destino=clima_destino,
-        pois_destino=pois_destino
+        pois_destino=pois_destino,
+        route_points=route_points
     )
 
 if __name__ == "__main__":

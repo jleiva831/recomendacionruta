@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Planificar Ruta{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Planificar Ruta</h1>
+    <form action="{{ url_for('calcular_ruta') }}" method="POST">
+        <div class="mb-3">
+            <label for="origen" class="form-label">Origen</label>
+            <input type="text" class="form-control" id="origen" name="origen" placeholder="Ingresa el origen" required>
+        </div>
+        <div class="mb-3">
+            <label for="destino" class="form-label">Destino</label>
+            <input type="text" class="form-control" id="destino" name="destino" placeholder="Ingresa el destino" required>
+        </div>
+        <div class="mb-3">
+            <label for="intervalo_km" class="form-label">Intervalo entre Checkpoints (km)</label>
+            <input type="number" class="form-control" id="intervalo_km" name="intervalo_km" value="10" required>
+        </div>
+        <div class="mb-3">
+            <label for="velocidad_promedio" class="form-label">Velocidad Promedio (km/h)</label>
+            <input type="number" class="form-control" id="velocidad_promedio" name="velocidad_promedio" value="60" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Calcular Ruta</button>
+    </form>
+</div>
+{% endblock %}
