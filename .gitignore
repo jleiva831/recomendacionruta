@@ -1,0 +1,27 @@
+# Entornos virtuales
+venv/
+
+# Archivos de configuración de base de datos
+*.db
+instance/
+
+# Archivos compilados de Python
+__pycache__/
+*.pyc
+
+# Archivos de migración
+migrations/versions/__pycache__/
+
+# Archivos de configuración de Flask-Migrate
+migrations/alembic.ini
+
+# Archivos de logs
+*.log
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración de IDE
+.vscode/
+.idea/

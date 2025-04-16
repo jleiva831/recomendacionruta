@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Detalles de la Ruta{% endblock %}
+
+{% block content %}
+<h1>Detalles de la Ruta</h1>
+<p><strong>Origen:</strong> {{ route.origen }}</p>
+<p><strong>Destino:</strong> {{ route.destino }}</p>
+<p><strong>Distancia Total:</strong> {{ route.distancia_total }} km</p>
+<p><strong>Fecha de Creación:</strong> {{ route.fecha_creacion }}</p>
+
+<div id="map" style="height: 500px; border: 1px solid #ddd;"></div>
+
+<h2 class="mt-4">Recomendaciones Cercanas en el Destino</h2>
+<div class="card">
+    <div class="card-body">
+        {% for categoria, pois in pois_destino.items() %}
+        <h4 class="text-primary">{{ categoria|capitalize }}</h4>
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for poi in pois %}
+                <tr>
+                    <td>{{ poi.nombre }}</td>
+                    <td>
+                        <a href="https://www.google.com/maps?q={{ poi.lat }},{{ poi.lon }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver en Mapa</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    window.routeCoordinates = {{ coordinates|tojson }};
+    window.climaDestino = {{ clima_destino|tojson }};
+    window.poisDestino = {{ pois_destino|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+
+<a href="{{ url_for('mis_rutas') }}" class="btn btn-secondary">Volver a Mis Rutas</a>
+{% endblock %}

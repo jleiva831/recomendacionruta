@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Administración de Usuarios{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Administración de Usuarios</h1>
+<a href="{{ url_for('create_user') }}" class="btn btn-primary mb-3">Crear Usuario</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Usuario</th>
+            <th>Administrador</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ "Sí" if user.is_admin else "No" }}</td>
+            <td>{{ "Activo" if user.is_active else "Bloqueado" }}</td>
+            <td>
+                <form action="{{ url_for('toggle_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-sm {{ 'btn-warning' if user.is_active else 'btn-success' }}">
+                        {{ "Bloquear" if user.is_active else "Desbloquear" }}
+                    </button>
+                </form>
+                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Volver al Inicio</a>
+{% endblock %}

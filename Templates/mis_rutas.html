@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Rutas{% endblock %}
+
+{% block content %}
+<h1>Mis Rutas</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Distancia (km)</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for route in routes %}
+        <tr>
+            <td>{{ route.origen }}</td>
+            <td>{{ route.destino }}</td>
+            <td>{{ route.distancia_total }}</td>
+            <td>{{ route.fecha_creacion }}</td>
+            <td>
+                <a href="{{ url_for('ver_ruta', route_id=route.id) }}" class="btn btn-info btn-sm">Ver</a>
+                <form action="{{ url_for('eliminar_ruta', route_id=route.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

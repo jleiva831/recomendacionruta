@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Usuario{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Crear Usuario</h1>
+<form action="{{ url_for('create_user') }}" method="POST" class="mt-4">
+    <div class="mb-3">
+        <label for="username" class="form-label">Nombre de Usuario</label>
+        <input type="text" id="username" name="username" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input type="password" id="password" name="password" class="form-control" required>
+    </div>
+    <div class="form-check mb-3">
+        <input type="checkbox" id="is_admin" name="is_admin" class="form-check-input">
+        <label for="is_admin" class="form-check-label">Administrador</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Crear Usuario</button>
+    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
